@@ -9,12 +9,22 @@ float scaled_gyroX, scaled_gyroY, scaled_gyroZ;
 float angleX, angleY, angleZ;
 float offsetX, offsetY, offsetZ;
 
+// rolling bufs for stats
+float* Ybuf;
+int tailY, headY;
+
+float* Zbuf;
+int tailZ, headZ;
+
+float* stats;
+
 // servo instance
 Servo servo_roll;
 Servo servo_yaw;
 
 // timing vars
 unsigned long lastSample = 0, lastPrint = 0;
+uint16_t samples_count;
 
 void readBytes()
 {
@@ -61,9 +71,15 @@ void setup()
   servo_roll.write(90);
   servo_yaw.write(90);
 
+  Ybuf = new float[128]; tailY = 0; headY = 1; 
+  Zbuf = new float[128]; tailZ = 0; headZ = 1; 
+  stats = new float[6];
+
   // record first sample
   lastSample = micros();
 }
+
+void push()
 
 void readIMU()
 {
@@ -71,6 +87,14 @@ void readIMU()
   gyroX = (hiX << 8) | loX;
   gyroY = (hiY << 8) | loY; 
   gyroZ = (hiZ << 8) | loZ; 
+
+  Ybuf[headY] = gyroY;
+  if (headY == tailY) {
+        // Since we are overwriting, advance the tail to maintain correct order
+        tailY = (tailY + 1) % 128;
+    }
+
+    headY = (headY + 1) % 128;
 }
 
 void calculateAngleDisplacment()
@@ -93,6 +117,12 @@ void moveServos()
   servo_yaw.write(constrain(90 + angleZ, 0, 180));
 }
 
+void calc_stats(float*& x, float*& y, float*& z, float*& arr)
+{
+
+  return;
+}
+
 void loop()
 {
   moveServos();
@@ -106,7 +136,21 @@ void loop()
     Serial.print("angleC = "); Serial.println(angleZ);
     Serial.println("-------------------------------------------");
 
-    // print the mean and sd of turret last 128 samples
+  
+
+    if (samples_count % 128 == 0 && samples_count != 0) {
+
+
+      // print da stats
+      calc_stats(Xbuf, Ybuf, Zbuf, stats);
+
+      Serial.println("Mean and SD :");
+      for(int i = 0; i < 6; i++) {
+        Serial.println(stats[i]);
+      }
+
+      // 
+    }
 
     lastPrint = millis();
   }

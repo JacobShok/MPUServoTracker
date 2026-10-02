@@ -12,10 +12,10 @@ float offsetX, offsetY, offsetZ;
 // rolling bufs for stats
 float* Ybuf;
 int tailY, headY;
-
 float* Zbuf;
 int tailZ, headZ;
 
+// gyro stats
 float* stats;
 
 // servo instance
@@ -73,13 +73,23 @@ void setup()
 
   Ybuf = new float[128]; tailY = 0; headY = 1; 
   Zbuf = new float[128]; tailZ = 0; headZ = 1; 
-  stats = new float[6];
+  stats = new float[4];
 
   // record first sample
   lastSample = micros();
 }
 
-void push()
+void push(int16_t& gyro, float*& buf, int head, int tail) {
+  buf[head] = gyro;
+
+  if (head == tail) {
+    tail = (tail + 1) % 128;
+  }
+
+  head = (head + 1) % 128;
+
+  return;
+}
 
 void readIMU()
 {
@@ -88,13 +98,8 @@ void readIMU()
   gyroY = (hiY << 8) | loY; 
   gyroZ = (hiZ << 8) | loZ; 
 
-  Ybuf[headY] = gyroY;
-  if (headY == tailY) {
-        // Since we are overwriting, advance the tail to maintain correct order
-        tailY = (tailY + 1) % 128;
-    }
-
-    headY = (headY + 1) % 128;
+  push(gyroY, Ybuf, headY, tailY);
+  push(gyroZ, Zbuf, headZ, tailZ);
 }
 
 void calculateAngleDisplacment()
@@ -117,8 +122,9 @@ void moveServos()
   servo_yaw.write(constrain(90 + angleZ, 0, 180));
 }
 
-void calc_stats(float*& x, float*& y, float*& z, float*& arr)
+void calc_stats(float*& x, float*& y)
 {
+  
 
   return;
 }

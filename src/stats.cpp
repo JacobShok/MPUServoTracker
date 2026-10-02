@@ -27,6 +27,7 @@ void push(float valY, float valZ) {
   int count = 0;
   int i = tail;
 
+  // calc sums
   while (i != head) {
     sumY += Ybuf[i];
     sumZ += Zbuf[i];
@@ -35,16 +36,22 @@ void push(float valY, float valZ) {
   }
   if (count == 0) return;
 
-  stats[0] = sumY / count;
-  stats[2] = sumZ / count;
+  stats[0] = sumY / count; // mean Y
+  stats[2] = sumZ / count; // mean Z
 
+  //compute variance for Y and Z
+  // Variance = average of squared differences from the mean
   float varY = 0, varZ = 0;
   i = tail;
   while (i != head) {
+    // Subtract the mean, then square it — measures how far tha sample is from average
     varY += (Ybuf[i] - stats[0]) * (Ybuf[i] - stats[0]);
     varZ += (Zbuf[i] - stats[2]) * (Zbuf[i] - stats[2]);
     i = (i + 1) % 128;
   }
-  stats[1] = sqrt(varY / count);
-  stats[3] = sqrt(varZ / count);
+
+  // Divide summed squares by count to get variance, then sqrt gives sd
+  // higher the sd more noise
+  stats[1] = sqrt(varY / count); // stddev Y
+  stats[3] = sqrt(varZ / count); // stddev Z
 }

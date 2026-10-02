@@ -15,9 +15,9 @@ void setup()
 
   // I2C for gyro setup
   Wire.begin();
-  Wire.beginTransmission(0x68);
-  Wire.write(0x6B);
-  Wire.write(0x00);
+  Wire.beginTransmission(0x68); // open connection
+  Wire.write(0x6B); // point to power mang reg 
+  Wire.write(0x00); // clear all bits / wake up
   Serial.println(Wire.endTransmission(true));
   delay(100);
 

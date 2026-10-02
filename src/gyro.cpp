@@ -14,7 +14,7 @@ void readBytes()
 {
   Wire.beginTransmission(0x68);
   Wire.write(0x43);
-  Wire.endTransmission(false);
+  Wire.endTransmission(false); // dont release bus
   Wire.requestFrom(0x68, 6, true);
   hiX = Wire.read();
   loX = Wire.read();

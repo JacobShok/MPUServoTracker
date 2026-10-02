@@ -23,7 +23,6 @@ Servo servo_yaw;
 
 // timing vars
 unsigned long lastSample = 0, lastPrint = 0;
-uint16_t samples_count;
 
 void readBytes()
 {
@@ -70,8 +69,8 @@ void setup()
   servo_roll.write(90);
   servo_yaw.write(90);
 
-  Ybuf = new float[128];
-  Zbuf = new float[128];
+  Ybuf = new float[128]();
+  Zbuf = new float[128]();
   tail = 0; head = 1; 
 
   stats = new float[4];
@@ -99,8 +98,6 @@ void readIMU()
   gyroX = (hiX << 8) | loX;
   gyroY = (hiY << 8) | loY; 
   gyroZ = (hiZ << 8) | loZ; 
-
-  push((float)gyroY, (float)gyroZ);
 }
 
 void calculateAngleDisplacment()
@@ -108,6 +105,8 @@ void calculateAngleDisplacment()
   scaled_gyroX = (float)gyroX / 131.0; scaled_gyroX -= offsetX;
   scaled_gyroY = (float)gyroY / 131.0; scaled_gyroY -= offsetY;
   scaled_gyroZ = (float)gyroZ / 131.0; scaled_gyroZ -= offsetZ;
+
+  push(scaled_gyroY, scaled_gyroZ);
 
   float dt = (micros() - lastSample) / 1e6;  
   lastSample = micros();
@@ -125,7 +124,30 @@ void moveServos()
 
 void calc_stats()
 {
+  float sumY = 0, sumZ = 0;
+  int count = 0;
+  int i = tail;
 
+  while (i != head) {
+    sumY += Ybuf[i];
+    sumZ += Zbuf[i];
+    i = (i + 1) % 128;
+    count++;
+  }
+  if (count == 0) return;
+
+  stats[0] = sumY / count;
+  stats[2] = sumZ / count;
+
+  float varY = 0, varZ = 0;
+  i = tail;
+  while (i != head) {
+    varY += (Ybuf[i] - stats[0]) * (Ybuf[i] - stats[0]);
+    varZ += (Zbuf[i] - stats[2]) * (Zbuf[i] - stats[2]);
+    i = (i + 1) % 128;
+  }
+  stats[1] = sqrt(varY / count);
+  stats[3] = sqrt(varZ / count);
 }
 
 void loop()
@@ -135,10 +157,16 @@ void loop()
   readIMU();
   calculateAngleDisplacment();
 
-  if (millis() - lastPrint >= 100) {
-    Serial.print("angleA = "); Serial.println(angleX);
-    Serial.print("angleB = "); Serial.println(angleY);
-    Serial.print("angleC = "); Serial.println(angleZ);
+  if (millis() - lastPrint >= 1000) {
+    Serial.print("angleX = "); Serial.println(angleX);
+    Serial.print("angleY = "); Serial.println(angleY);
+    Serial.print("angleZ = "); Serial.println(angleZ);
+
+    calc_stats();
+    Serial.print("Mean Y = "); Serial.println(stats[0]);
+    Serial.print("SD Y = "); Serial.println(stats[1]);
+    Serial.print("Mean Z = "); Serial.println(stats[2]);
+    Serial.print("SD Z = "); Serial.println(stats[3]);
     Serial.println("-------------------------------------------");
 
     lastPrint = millis();
